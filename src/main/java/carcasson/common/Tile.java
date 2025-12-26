@@ -123,15 +123,29 @@ public class Tile implements Serializable {
         return "FIELD"; // Поле
     }
 
-    // Проверяет совместимость сторон
     public static boolean areSidesCompatible(char side1, char side2) {
         // Город должен соединяться с городом
         if (side1 == 'C' && side2 == 'C') return true;
         // Дорога должна соединяться с дорогой
         if (side1 == 'S' && side2 == 'S') return true;
-        // Поле (N) может соединяться с чем угодно
-        if (side1 == 'N' || side2 == 'N') return true;
+        // Поле должно соединяться с полем
+        if (side1 == 'N' && side2 == 'N') return true;
         return false;
+    }
+
+    public boolean canPlaceMeeple() {
+        String type = getType();
+
+        // Проверяем специальные случаи плиток, на которые нельзя ставить мипла
+        String fileName = getFileName();
+        if (fileName != null) {
+            if (fileName.equals("tile-l.png") || fileName.equals("tile-s.png")) {
+                return false; // На эти плитки нельзя ставить мипла
+            }
+        }
+
+        // Можно ставить мипла только на город, дорогу или монастырь
+        return type.equals("CITY") || type.equals("ROAD") || type.equals("MONASTERY");
     }
 
     public String getFileName() {

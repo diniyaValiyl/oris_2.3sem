@@ -245,13 +245,21 @@ public class GameRoom {
             broadcastChat(username + " разместил плитку в (" + x + "," + y + ")");
             broadcastGameState();
 
-            // Сообщаем игроку о возможностях
+            // ============ ОБНОВЛЕННОЕ СООБЩЕНИЕ ДЛЯ ИГРОКА ============
+            // Сообщаем игроку о возможностях с учетом canPlaceMeeple()
             String tileType = placedTile.getType();
             String message = "Плитка размещена! Тип: " + tileType;
-            if (!tileType.equals("FIELD")) {
+
+            if (placedTile.canPlaceMeeple()) {
                 message += ". Вы можете поставить мипла (M) или пропустить ход (S)";
             } else {
-                message += ". Нельзя поставить мипла на поле. Пропустите ход (S)";
+                if (placedTile.getFileName() != null &&
+                        (placedTile.getFileName().equals("tile-l.png") ||
+                                placedTile.getFileName().equals("tile-s.png"))) {
+                    message += ". На эту плитку нельзя ставить мипла. Пропустите ход (S)";
+                } else {
+                    message += ". Нельзя поставить мипла на эту плитку. Пропустите ход (S)";
+                }
             }
 
             getPlayer(username).sendMessage(new GameMessage(
@@ -259,6 +267,7 @@ public class GameRoom {
                     "SERVER",
                     message
             ));
+            // ============ КОНЕЦ ОБНОВЛЕННОГО СООБЩЕНИЯ ============
 
         } else {
             System.out.println("Некорректное размещение!");
@@ -330,17 +339,30 @@ public class GameRoom {
             return;
         }
 
-        String tileType = tile.getType();
+        // ============ ВАЖНОЕ ИСПРАВЛЕНИЕ: проверка можно ли ставить мипла на эту плитку ============
+        if (!tile.canPlaceMeeple()) {
+            String fileName = tile.getFileName();
+            String message;
 
-        // Проверяем, можно ли поставить мипла на этот тип
-        if (tileType.equals("FIELD")) {
+            if (fileName != null && fileName.equals("tile-l.png")) {
+                message = "На плитку tile-l.png нельзя ставить мипла!";
+            } else if (fileName != null && fileName.equals("tile-s.png")) {
+                message = "На начальную плитку tile-s.png нельзя ставить мипла!";
+            } else if (tile.getType().equals("FIELD")) {
+                message = "Нельзя поставить мипла на поле!";
+            } else {
+                message = "Нельзя поставить мипла на эту плитку!";
+            }
+
             getPlayer(username).sendMessage(new GameMessage(
                     "CHAT_MESSAGE",
                     "SERVER",
-                    "Нельзя поставить мипла на поле!"
+                    message
             ));
             return;
         }
+
+        String tileType = tile.getType();
 
         if (tile.hasMeeple()) {
             getPlayer(username).sendMessage(new GameMessage(
@@ -351,7 +373,7 @@ public class GameRoom {
             return;
         }
 
-        // ============ ВАЖНО: ПРОВЕРКА ЗАНЯТОСТИ ОБЪЕКТА ============
+        // ============ ПРОВЕРКА ЗАНЯТОСТИ ОБЪЕКТА ============
         // Находим все плитки объекта
         List<Tile> objectTiles = findConnectedTiles(lastPlacedX, lastPlacedY, tileType);
 
@@ -389,7 +411,7 @@ public class GameRoom {
 
         player.useMeeple();
 
-        // ============ 4. ИСПРАВЛЕННАЯ СИСТЕМА ПОДСЧЕТА ОЧКОВ ============
+        // ============ СИСТЕМА ПОДСЧЕТА ОЧКОВ ============
         int points = calculatePoints(objectTiles, tileType, lastPlacedX, lastPlacedY);
         player.addScore(points);
 
