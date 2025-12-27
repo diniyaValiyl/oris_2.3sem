@@ -42,10 +42,12 @@ public class GameServer {
 
     public synchronized void removeClient(ClientHandler client) {
         clients.remove(client);
-        System.out.println("Клиент отключен: " + client.getUsername());
+        String username = client.getUsername();
+        System.out.println("Клиент отключен" + (username != null ? ": " + username : " (не авторизован)"));
 
-        if (client.getUsername() != null) {
-            gameRoom.removePlayer(client.getUsername());
+        // Если игра идет и отключился игрок, завершаем игру
+        if (username != null && gameRoom.getPlayerCount() >= 2) {
+            gameRoom.endGame("Игра завершена: игрок " + username + " отключился");
         }
     }
 

@@ -43,9 +43,9 @@ public class BoardPanel extends JPanel {
 
     public void initialize() {
         placedTiles.clear();
-        // Добавляем стартовую плитку при инициализации
-        Tile startTile = new Tile(0, "/tiles/tile-s.png",
-                "N=C S=N W=S E=S NS=0 NE=0 NW=0 WE=1 SE=0 SW=0");
+        // Добавляем новую стартовую плитку
+        Tile startTile = new Tile(0, "/tiles/tile-q.png",
+                "N=S S=S W=N E=N NS=1 NE=0 NW=0 WE=0 SE=0 SW=0");
         startTile.setX(CENTER_X);
         startTile.setY(CENTER_Y);
         placeTile(startTile);

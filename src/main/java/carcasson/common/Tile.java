@@ -3,6 +3,7 @@ package carcasson.common;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
 
 public class Tile implements Serializable {
     private int id;
@@ -15,7 +16,6 @@ public class Tile implements Serializable {
     private String meepleOwner;
     private String meepleType;
 
-    // Добавим: какие объекты на плитке уже заняты
     private Set<String> occupiedFeatures = new HashSet<>();
 
     public Tile(int id, String imagePath, String features) {
@@ -62,10 +62,9 @@ public class Tile implements Serializable {
     public String getMeepleOwner() { return meepleOwner; }
     public String getMeepleType() { return meepleType; }
 
-    // ВАЖНО: Исправленный метод getSide с правильной логикой вращения
     public char getSide(char side) {
         // Разбираем features
-        char north = 'N'; // по умолчанию
+        char north = 'N';
         char east = 'N';
         char south = 'N';
         char west = 'N';
@@ -81,56 +80,54 @@ public class Tile implements Serializable {
         // Массив сторон в порядке: N, E, S, W
         char[] sides = {north, east, south, west};
 
-        // Учитываем вращение: поворачиваем массив
-        int index = -1;
+        // Определяем исходный индекс стороны
+        int originalIndex = -1;
         switch(side) {
-            case 'N': index = 0; break;
-            case 'E': index = 1; break;
-            case 'S': index = 2; break;
-            case 'W': index = 3; break;
+            case 'N': originalIndex = 0; break;
+            case 'E': originalIndex = 1; break;
+            case 'S': originalIndex = 2; break;
+            case 'W': originalIndex = 3; break;
         }
 
-        // Корректируем индекс с учетом вращения
-        // При вращении по часовой стрелке: N→E→S→W
-        int adjustedIndex = (index - rotation + 4) % 4;
+        if (originalIndex == -1) return 'N';
 
-        return sides[adjustedIndex];
+        // Учитываем вращение: при вращении по часовной стрелке стороны смещаются
+        int rotatedIndex = (originalIndex - rotation + 4) % 4;
+        if (rotatedIndex < 0) rotatedIndex += 4;
+
+        return sides[rotatedIndex];
     }
 
     public String getType() {
-        // Определяем тип плитки по features
+        // Проверяем сначала монастырь
         if (features.contains("CL=1")) {
             return "MONASTERY";
         }
 
-        // Если есть C= - это город
+        // Проверяем город
         if (features.contains("C=")) {
             return "CITY";
         }
 
-        // Если есть S= - это дорога
-        if (features.contains("S=")) {
-            // Проверяем, есть ли хоть одна сторона с дорогой
-            String[] parts = features.split(" ");
-            for (String part : parts) {
-                if (part.startsWith("N=") && part.charAt(2) == 'S') return "ROAD";
-                if (part.startsWith("E=") && part.charAt(2) == 'S') return "ROAD";
-                if (part.startsWith("S=") && part.charAt(2) == 'S') return "ROAD";
-                if (part.startsWith("W=") && part.charAt(2) == 'S') return "ROAD";
-            }
+        // Проверяем дорогу
+        if (features.contains("S=") ||
+                features.contains("NS=1") || features.contains("WE=1") ||
+                features.contains("NE=1") || features.contains("NW=1") ||
+                features.contains("SE=1") || features.contains("SW=1")) {
+            return "ROAD";
         }
 
         return "FIELD"; // Поле
     }
 
-    public static boolean areSidesCompatible(char side1, char side2) {
-        // Город должен соединяться с городом
-        if (side1 == 'C' && side2 == 'C') return true;
-        // Дорога должна соединяться с дорогой
-        if (side1 == 'S' && side2 == 'S') return true;
-        // Поле должно соединяться с полем
-        if (side1 == 'N' && side2 == 'N') return true;
-        return false;
+    // Метод для проверки, является ли плитка tile-n.png
+    public boolean isTileN() {
+        return "tile-n.png".equals(getFileName());
+    }
+
+    // Метод для проверки, является ли плитка tile-l.png
+    public boolean isTileL() {
+        return "tile-l.png".equals(getFileName());
     }
 
     public boolean canPlaceMeeple() {
@@ -148,6 +145,27 @@ public class Tile implements Serializable {
         return type.equals("CITY") || type.equals("ROAD") || type.equals("MONASTERY");
     }
 
+    public static boolean areSidesCompatible(char side1, char side2) {
+        // Город должен соединяться с городом
+        if (side1 == 'C' && side2 == 'C') return true;
+        // Дорога должна соединяться с дорогой
+        if (side1 == 'S' && side2 == 'S') return true;
+        // Поле должно соединяться с полем
+        if (side1 == 'N' && side2 == 'N') return true;
+        return false;
+    }
+
+    // Дополнительный метод для проверки совместимости с развилкой
+    public static boolean areSidesCompatibleWithFork(char side1, char side2) {
+        // Для развилки: дорога может соединяться с дорогой или полем
+        // Поле может соединяться только с полем
+        if (side1 == 'S' && side2 == 'S') return true; // дорога-дорога
+        if (side1 == 'S' && side2 == 'N') return true; // дорога-поле (для развилки)
+        if (side1 == 'N' && side2 == 'S') return true; // поле-дорога (для развилки)
+        if (side1 == 'N' && side2 == 'N') return true; // поле-поле
+        return false;
+    }
+
     public String getFileName() {
         return imagePath.substring(imagePath.lastIndexOf("/") + 1);
     }
@@ -162,7 +180,7 @@ public class Tile implements Serializable {
         occupiedFeatures.add(featureType);
     }
 
-    // Метод для освобождения объекта (если понадобится)
+    // Метод для освобождения объекта
     public void freeFeature(String featureType) {
         occupiedFeatures.remove(featureType);
     }
@@ -172,8 +190,82 @@ public class Tile implements Serializable {
         return new HashSet<>(occupiedFeatures);
     }
 
+    // ============ МЕТОДЫ ДЛЯ TILE-N.PNG ============
+
+    public boolean isCityTileN() {
+        String fileName = getFileName();
+        return fileName != null && fileName.equals("tile-n.png") && getSide('N') == 'C';
+    }
+
+    public char getCitySide() {
+        if (!isCityTileN()) return 'N';
+
+        // У tile-n.png город всегда на северной стороне в features
+        // Учитываем вращение
+        char[] sides = {'N', 'W', 'S', 'E'};
+        return sides[rotation % 4];
+    }
+
+    // ============ МЕТОДЫ ДЛЯ TILE-L.PNG ============
+
+    // Исправленный метод: развилка имеет 3 дороги и 1 поле
+    public boolean isRoadFork() {
+        String fileName = getFileName();
+        if (fileName == null || !fileName.equals("tile-l.png")) return false;
+
+        // Подсчитываем количество дорожных сторон
+        int roadCount = 0;
+        char[] sidesToCheck = {'N', 'E', 'S', 'W'};
+        for (char side : sidesToCheck) {
+            if (getSide(side) == 'S') roadCount++;
+        }
+
+        return roadCount == 3; // Развилка имеет 3 дороги и 1 поле
+    }
+
+    // Метод для получения всех дорожных сторон развилки
+    public ArrayList<Character> getRoadSides() {
+        ArrayList<Character> roadSides = new ArrayList<>();
+
+        if (isRoadFork()) {
+            char[] sides = {'N', 'E', 'S', 'W'};
+            for (char side : sides) {
+                if (getSide(side) == 'S') {
+                    roadSides.add(side);
+                }
+            }
+        }
+        return roadSides;
+    }
+
+    // Метод для получения стороны поля у развилки
+    public char getFieldSide() {
+        if (!isRoadFork()) return 'N';
+
+        char[] sides = {'N', 'E', 'S', 'W'};
+        for (char side : sides) {
+            if (getSide(side) == 'N') {
+                return side;
+            }
+        }
+        return 'N';
+    }
+
+    // Метод для проверки, является ли сторона дорожной
+    public boolean isRoadSide(char side) {
+        return getSide(side) == 'S';
+    }
+
+    // Метод для проверки, является ли сторона полем
+    public boolean isFieldSide(char side) {
+        return getSide(side) == 'N';
+    }
+
     @Override
     public String toString() {
-        return "Tile{id=" + id + ", file='" + getFileName() + "', rotation=" + rotation + "}";
+        return "Tile{id=" + id + ", file='" + getFileName() + "', rotation=" + rotation +
+                ", type=" + getType() + ", x=" + x + ", y=" + y +
+                ", N=" + getSide('N') + ", E=" + getSide('E') +
+                ", S=" + getSide('S') + ", W=" + getSide('W') + "}";
     }
 }

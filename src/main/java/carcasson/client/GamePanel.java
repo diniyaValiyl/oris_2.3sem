@@ -46,6 +46,12 @@ public class GamePanel extends JPanel {
     public void initialize() {
         boardPanel.initialize();
         playerPanel.setPlayerName(controller.getUsername());
+        appendChatMessage("=== ПРАВИЛА ИГРЫ ===");
+        appendChatMessage("• tile-l.png: РАЗВИЛКА ДОРОГ - нельзя ставить мипла");
+        appendChatMessage("• tile-n.png: ГОРОД - при соединении 2 плиток = 4 очка");
+        appendChatMessage("• tile-monastery.png: МОНАСТЫРЬ - 1+соседи очков");
+        appendChatMessage("• tile-q.png, tile-r.png: ДОРОГИ - 1 очко за плитку");
+        appendChatMessage("");
         appendChatMessage("Подключение установлено. Ожидаем второго игрока...");
     }
 

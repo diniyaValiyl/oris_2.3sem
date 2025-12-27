@@ -15,7 +15,7 @@ public class ControlPanel extends JPanel {
         this.controller = controller;
         setLayout(new GridLayout(5, 1, 5, 5));
         setBorder(BorderFactory.createTitledBorder("Управление"));
-        setPreferredSize(new Dimension(350, 250));
+        setPreferredSize(new Dimension(350, 300)); // Увеличил высоту
 
         // Кнопка "Поставить мипла" - теперь только одна
         placeMeepleButton = new JButton("Поставить мипла (M)");
@@ -31,12 +31,13 @@ public class ControlPanel extends JPanel {
         endGameButton = new JButton("Завершить игру");
         endGameButton.addActionListener(e -> endGame());
 
-        // Информация о правилах
+        // НОВЫЕ ПРАВИЛА С УЧЕТОМ TILE-L.PNG И TILE-N.PNG
         JLabel rulesLabel = new JLabel(
-                "<html><center><b>Правила подсчета очков:</b><br>" +
-                        "• Город: 2 очка за каждую плитку города<br>" +
-                        "• Дорога: 1 очко за каждую плитку дороги<br>" +
-                        "• Монастырь: 1 очко + по 1 за соседа</center></html>"
+                "<html><center><b>НОВЫЕ ПРАВИЛА:</b><br>" +
+                        "• <font color='blue'>tile-l.png</font>: РАЗВИЛКА - нельзя ставить мипла<br>" +
+                        "• <font color='red'>tile-n.png</font>: ГОРОД - 2 плитки = 4 очка<br>" +
+                        "• <font color='green'>tile-monastery.png</font>: 1+соседи очков<br>" +
+                        "• tile-q.png, tile-r.png: 1 очко за плитку</center></html>"
         );
         rulesLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
