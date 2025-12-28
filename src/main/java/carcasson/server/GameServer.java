@@ -16,7 +16,7 @@ public class GameServer {
     public void start() {
         try {
             serverSocket = new ServerSocket(8888);
-            System.out.println("Сервер запущен на порту 8888");
+            System.out.println("Сервер запущен на порту 1972");
             System.out.println("IP адрес: " + InetAddress.getLocalHost().getHostAddress());
 
             while (true) {
@@ -29,14 +29,6 @@ public class GameServer {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        }
-    }
-
-    public synchronized void broadcastToAll(String message, ClientHandler exclude) {
-        for (ClientHandler client : clients) {
-            if (client != exclude) {
-                client.sendMessage(message);
-            }
         }
     }
 

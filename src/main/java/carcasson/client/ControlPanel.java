@@ -17,47 +17,33 @@ public class ControlPanel extends JPanel {
         setBorder(BorderFactory.createTitledBorder("Управление"));
         setPreferredSize(new Dimension(350, 300)); // Увеличил высоту
 
-        // Кнопка "Поставить мипла" - теперь только одна
-        placeMeepleButton = new JButton("Поставить мипла (M)");
+        placeMeepleButton = new JButton("Поставить мипла ");
         placeMeepleButton.addActionListener(e -> placeMeeple());
         placeMeepleButton.setToolTipText("Поставить мипла на последнюю размещенную плитку");
 
-        // Кнопка "Пропустить"
-        skipButton = new JButton("Пропустить мипла (S)");
+        skipButton = new JButton("Пропустить мипла ");
         skipButton.addActionListener(e -> controller.sendTurnSkip());
         skipButton.setToolTipText("Не ставить мипла на этот ход");
 
-        // Кнопка "Завершить игру"
         endGameButton = new JButton("Завершить игру");
         endGameButton.addActionListener(e -> endGame());
 
-        // НОВЫЕ ПРАВИЛА С УЧЕТОМ TILE-L.PNG И TILE-N.PNG
+
         JLabel rulesLabel = new JLabel(
                 "<html><center><b>НОВЫЕ ПРАВИЛА:</b><br>" +
-                        "• <font color='blue'>tile-l.png</font>: РАЗВИЛКА - нельзя ставить мипла<br>" +
-                        "• <font color='red'>tile-n.png</font>: ГОРОД - 2 плитки = 4 очка<br>" +
-                        "• <font color='green'>tile-monastery.png</font>: 1+соседи очков<br>" +
-                        "• tile-q.png, tile-r.png: 1 очко за плитку</center></html>"
+                        "• <font color='blue'>РАЗВИЛКА</font>: на ней не может быть мипла <br>" +
+                        "• <font color='red'>ГОРОД</font>: расчитывается с бонусами<br>" +
+                        "• <font color='green'>МОНАСТЫРЬ</font>: 1+соседи очков<br>" +
+                        "• ВСЕГО МИПЛОВ 4 У КАЖДОГО</center></html>"
         );
         rulesLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-        // Подсказка по горячим клавишам
-        JLabel helpLabel = new JLabel(
-                "<html><center><b>Горячие клавиши:</b><br>" +
-                        "R - повернуть плитку<br>" +
-                        "M - поставить мипла<br>" +
-                        "S - пропустить мипла<br>" +
-                        "Клик на поле - разместить плитку</center></html>"
-        );
-        helpLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         add(placeMeepleButton);
         add(skipButton);
         add(endGameButton);
         add(rulesLabel);
-        add(helpLabel);
 
-        // Горячие клавиши
+        // Горячие клавиши надо допилить
         getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_M, 0), "placeMeeple");
         getActionMap().put("placeMeeple", new AbstractAction() {

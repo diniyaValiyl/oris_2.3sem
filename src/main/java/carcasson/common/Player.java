@@ -18,11 +18,9 @@ public class Player implements Serializable {
         this.meeplesLeft = 4;
     }
 
-    public String getId() { return id; }
     public String getName() { return name; }
     public String getColor() { return color; }
     public int getScore() { return score; }
-    public void setScore(int score) { this.score = score; }
     public void addScore(int points) { this.score += points; }
 
     public int getMeeplesLeft() { return meeplesLeft; }
@@ -31,9 +29,6 @@ public class Player implements Serializable {
     }
     public void returnMeeple() { meeplesLeft++; }
 
-    public Color getAwtColor() {
-        return color.equals("RED") ? Color.RED : Color.BLUE;
-    }
 
     @Override
     public String toString() {

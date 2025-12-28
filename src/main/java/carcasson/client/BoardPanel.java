@@ -119,14 +119,12 @@ public class BoardPanel extends JPanel {
         int meepleX = screenX + (TILE_SIZE - meepleSize) / 2;
         int meepleY = screenY + (TILE_SIZE - meepleSize) / 2;
 
-        // Рисуем фигурку мипла (как человечек)
-        // Голова
         int headSize = meepleSize / 3;
         g.fillOval(meepleX + (meepleSize - headSize)/2,
                 meepleY,
                 headSize, headSize);
 
-        // Тело (треугольник)
+        // Тело
         int[] xPoints = {
                 meepleX + meepleSize/2,
                 meepleX + meepleSize/4,
@@ -139,7 +137,6 @@ public class BoardPanel extends JPanel {
         };
         g.fillPolygon(xPoints, yPoints, 3);
 
-        // Черная обводка
         g.setColor(Color.BLACK);
         g.drawOval(meepleX + (meepleSize - headSize)/2,
                 meepleY,
@@ -149,7 +146,7 @@ public class BoardPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        System.out.println("=== paintComponent() вызван ===");
+        System.out.println("paintComponent() вызван");
         System.out.println("Размер placedTiles: " + placedTiles.size());
 
         if (placedTiles.isEmpty()) {
@@ -166,7 +163,6 @@ public class BoardPanel extends JPanel {
             g.drawLine(0, i * TILE_SIZE, GRID_SIZE * TILE_SIZE, i * TILE_SIZE);
         }
 
-        // Рисуем все плитки
         System.out.println("Рисуем " + placedTiles.size() + " плиток на поле");
         for (Tile tile : placedTiles.values()) {
             System.out.println("  Рисуем плитку в (" + tile.getX() + "," + tile.getY() +
@@ -210,7 +206,7 @@ public class BoardPanel extends JPanel {
     }
 
     public void updateBoard(Object gameState) {
-        System.out.println("=== BoardPanel.updateBoard() вызван ===");
+        System.out.println("BoardPanel.updateBoard() вызван ");
         System.out.println("Тип gameState: " + (gameState != null ? gameState.getClass().getName() : "null"));
 
         if (gameState instanceof Tile[][]) {
@@ -275,7 +271,6 @@ public class BoardPanel extends JPanel {
             System.out.println("Всего плиток добавлено в placedTiles: " + placedTiles.size());
             System.out.println("Ключи в placedTiles: " + placedTiles.keySet());
 
-            // Проверяем, правильно ли отрисуются плитки
             System.out.println("Проверка отрисовки:");
             for (Map.Entry<String, Tile> entry : placedTiles.entrySet()) {
                 Tile t = entry.getValue();
@@ -284,8 +279,6 @@ public class BoardPanel extends JPanel {
                 System.out.println("  Ключ: " + entry.getKey() +
                         " -> экранные координаты: (" + screenX + "," + screenY + ")");
             }
-
-            // Принудительно вызываем перерисовку
             repaint();
             System.out.println("Вызван repaint()");
 
@@ -300,7 +293,6 @@ public class BoardPanel extends JPanel {
         }
     }
 
-    // Вспомогательный метод для размещения плитки
     public void placeTile(Tile tile) {
         String key = tile.getX() + "," + tile.getY();
         placedTiles.put(key, tile);

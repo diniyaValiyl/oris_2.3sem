@@ -31,22 +31,20 @@ public class GameRoom {
         deck.clear();
         List<String[]> allTiles = new ArrayList<>();
 
-        // Города (tile-n.png) - 6 штук
         for (int i = 0; i < 6; i++) {
             allTiles.add(new String[]{"tile-n.png", "N=C S=N W=N E=N NS=0 NE=0 NW=0 WE=0 SE=0 SW=0"});
         }
 
-        // Монастыри (tile-monastery.png) - 3 штуки
         for (int i = 0; i < 3; i++) {
             allTiles.add(new String[]{"tile-monastery.png", "N=N S=N W=N E=N NS=0 NE=0 NW=0 WE=0 SE=0 SW=0 CL=1"});
         }
 
-        // Развилки (tile-l.png) - 2 штуки
+
         for (int i = 0; i < 2; i++) {
             allTiles.add(new String[]{"tile-l.png", "N=N S=S W=S E=S NS=0 NE=0 NW=0 WE=0 SE=0 SW=0"});
         }
 
-        // Дороги (9 штук)
+
         String[][] roadTiles = {
                 {"tile-q.png", "N=S S=S W=N E=N NS=1 NE=0 NW=0 WE=0 SE=0 SW=0"},
                 {"tile-r.png", "N=N S=S W=S E=N NS=0 NE=0 NW=0 WE=0 SE=0 SW=1"},
@@ -70,14 +68,13 @@ public class GameRoom {
             deck.add(tile);
         }
 
-        // Отладочная информация
         Map<String, Integer> tileCount = new HashMap<>();
         for (Tile tile : deck) {
             String fileName = tile.getFileName();
             tileCount.put(fileName, tileCount.getOrDefault(fileName, 0) + 1);
         }
 
-        System.out.println("=== СОСТАВ КОЛОДЫ ===");
+        System.out.println("СОСТАВ КОЛОДЫ");
         for (Map.Entry<String, Integer> entry : tileCount.entrySet()) {
             System.out.println(entry.getKey() + ": " + entry.getValue() + " шт.");
         }
@@ -184,26 +181,30 @@ public class GameRoom {
     }
 
     private boolean areSidesCompatible(char side1, char side2, Tile tile1, Tile tile2) {
-        // Особый случай для tile-n.png
-        if (tile1.isTileN() || tile2.isTileN()) {
-            if (side1 == 'C' && side2 == 'C') return true;
-            if (side1 == 'N' && side2 == 'N') return true;
-            return false;
+        if ("tile-n.png".equals(tile1.getFileName()) && side1 == 'C') {
+
+            return side2 == 'C' && "tile-n.png".equals(tile2.getFileName());
         }
 
-        // Особый случай для развилки tile-l.png
-        if (tile1.isTileL() || tile2.isTileL()) {
-            // Развилка соединяется с дорогами только через стороны 'S'
-            if (side1 == 'S' && side2 == 'S') return true; // дорога+дорога
-            if (side1 == 'N' && side2 == 'N') return true; // поле+поле
-            // Развилка НЕ соединяет дорогу с полем
-            return false;
+        if ("tile-n.png".equals(tile2.getFileName()) && side2 == 'C') {
+            return side1 == 'C' && "tile-n.png".equals(tile1.getFileName());
         }
 
-        // Общие правила
-        if (side1 == 'C' && side2 == 'C') return true;
-        if (side1 == 'S' && side2 == 'S') return true;
-        if (side1 == 'N' && side2 == 'N') return true;
+        if (side1 == 'S' && side2 == 'S') {
+            return true;
+        }
+
+        if (side1 == 'N' && side2 == 'N') {
+            return true;
+        }
+
+        if ("tile-l.png".equals(tile1.getFileName()) && side1 == 'S') {
+            return side2 == 'S';
+        }
+
+        if ("tile-l.png".equals(tile2.getFileName()) && side2 == 'S') {
+            return side1 == 'S';
+        }
 
         return false;
     }
@@ -222,8 +223,7 @@ public class GameRoom {
         int x = coords[0];
         int y = coords[1];
 
-        System.out.println("=== РАЗМЕЩЕНИЕ ПЛИТКИ ===");
-        System.out.println(username + " пытается разместить " + tile.getFileName() + " в (" + x + "," + y + ")");
+
 
         if (isValidPlacement(tile, x, y)) {
             Tile placedTile = new Tile(tile.getId(), tile.getImagePath(), tile.getFeatures());
@@ -238,8 +238,6 @@ public class GameRoom {
             board[x][y] = placedTile;
             playerTiles.remove(username);
 
-
-
             if ("tile-n.png".equals(placedTile.getFileName())) {
                 checkCityCompletionForTileN(x, y);
             }
@@ -247,6 +245,7 @@ public class GameRoom {
             System.out.println("Плитка успешно размещена!");
             broadcastChat(username + " разместил плитку в (" + x + "," + y + ")");
             broadcastGameState();
+
 
             String message = getPlacementOptionsMessage(placedTile, username);
             getPlayer(username).sendMessage(new GameMessage("CHAT_MESSAGE", "SERVER", message));
@@ -256,145 +255,8 @@ public class GameRoom {
                     "Нельзя разместить плитку здесь. Проверьте совместимость с соседями."));
         }
     }
-    /**
-     * Находит ВСЕ сегменты дорог, связанные через развилки
-     * Например: [Дорога1]-[Дорога2]-[Развилка]-[Дорога3] → два сегмента: [Дорога1, Дорога2] и [Дорога3]
-     */
-    private List<List<Tile>> findAllRoadSegmentsThroughFork(int startX, int startY) {
-        List<List<Tile>> allSegments = new ArrayList<>();
-        Set<String> visited = new HashSet<>();
 
-        // Начинаем с начальной плитки
-        List<Tile> initialSegment = findRoadSegmentUntilFork(startX, startY, visited);
-        if (!initialSegment.isEmpty()) {
-            allSegments.add(initialSegment);
-        }
 
-        // Для каждой развилки в начальном сегменте ищем дополнительные сегменты
-        for (Tile tile : initialSegment) {
-            if ("tile-l.png".equals(tile.getFileName())) {
-                findAdditionalSegmentsFromFork(tile.getX(), tile.getY(), visited, allSegments);
-            }
-        }
-
-        System.out.println("Найдено всего " + allSegments.size() + " сегментов дороги");
-        return allSegments;
-    }
-
-    /**
-     * Находит сегмент дороги ДО развилки (развилка - конец сегмента)
-     */
-    private List<Tile> findRoadSegmentUntilFork(int startX, int startY, Set<String> visited) {
-        List<Tile> segment = new ArrayList<>();
-        Queue<int[]> queue = new LinkedList<>();
-        queue.add(new int[]{startX, startY});
-
-        while (!queue.isEmpty()) {
-            int[] current = queue.poll();
-            int x = current[0];
-            int y = current[1];
-            String key = x + "," + y;
-
-            if (visited.contains(key)) continue;
-
-            Tile tile = board[x][y];
-            if (tile == null) continue;
-
-            // Проверяем, является ли плитка частью дорожной системы
-            boolean isRoadRelated = tile.getType().equals("ROAD") ||
-                    "tile-l.png".equals(tile.getFileName());
-
-            if (!isRoadRelated) continue;
-
-            visited.add(key);
-            segment.add(tile);
-
-            // Если это развилка - останавливаемся здесь (не ищем дальше от развилки)
-            if ("tile-l.png".equals(tile.getFileName())) {
-                continue;
-            }
-
-            // Для обычных дорог ищем соседей
-            int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-            for (int[] dir : directions) {
-                int nx = x + dir[0];
-                int ny = y + dir[1];
-
-                if (nx >= 0 && nx < 15 && ny >= 0 && ny < 15) {
-                    Tile neighbor = board[nx][ny];
-                    if (neighbor != null && !visited.contains(nx + "," + ny)) {
-
-                        // Проверяем, является ли сосед частью дорожной системы
-                        boolean neighborIsRoadRelated = neighbor.getType().equals("ROAD") ||
-                                "tile-l.png".equals(neighbor.getFileName());
-
-                        if (neighborIsRoadRelated) {
-                            // Проверяем соединение
-                            char side1 = tile.getSide(getDirectionChar(dir));
-                            char side2 = neighbor.getSide(getOppositeDirectionChar(dir));
-
-                            if (areSidesCompatible(side1, side2, tile, neighbor)) {
-                                queue.add(new int[]{nx, ny});
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return segment;
-    }
-
-    /**
-     * Находит дополнительные сегменты, исходящие от развилки
-     */
-    private void findAdditionalSegmentsFromFork(int forkX, int forkY, Set<String> visited, List<List<Tile>> allSegments) {
-        Tile fork = board[forkX][forkY];
-        if (fork == null || !"tile-l.png".equals(fork.getFileName())) return;
-
-        int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-
-        for (int[] dir : directions) {
-            int nx = forkX + dir[0];
-            int ny = forkY + dir[1];
-            String neighborKey = nx + "," + ny;
-
-            if (nx >= 0 && nx < 15 && ny >= 0 && ny < 15 && !visited.contains(neighborKey)) {
-                Tile neighbor = board[nx][ny];
-
-                if (neighbor != null) {
-                    char forkSide = fork.getSide(getDirectionChar(dir));
-                    char neighborSide = neighbor.getSide(getOppositeDirectionChar(dir));
-
-                    // Развилка соединяется дорогой только если обе стороны 'S' (дорога)
-                    if (forkSide == 'S' && neighborSide == 'S') {
-                        boolean neighborIsRoadRelated = neighbor.getType().equals("ROAD") ||
-                                "tile-l.png".equals(neighbor.getFileName());
-
-                        if (neighborIsRoadRelated) {
-                            // Находим новый сегмент, начиная с соседа
-                            List<Tile> newSegment = findRoadSegmentUntilFork(nx, ny, visited);
-                            if (!newSegment.isEmpty()) {
-                                allSegments.add(newSegment);
-
-                                // Рекурсивно проверяем развилки в новом сегменте
-                                for (Tile tile : newSegment) {
-                                    if ("tile-l.png".equals(tile.getFileName()) &&
-                                            !visited.contains(tile.getX() + "," + tile.getY())) {
-                                        findAdditionalSegmentsFromFork(tile.getX(), tile.getY(), visited, allSegments);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Вспомогательный метод для получения символа направления
-     */
     private char getDirectionChar(int[] dir) {
         if (dir[0] == -1) return 'W';
         if (dir[0] == 1) return 'E';
@@ -403,9 +265,6 @@ public class GameRoom {
         return 'N';
     }
 
-    /**
-     * Вспомогательный метод для получения противоположного символа направления
-     */
     private char getOppositeDirectionChar(int[] dir) {
         if (dir[0] == -1) return 'E';
         if (dir[0] == 1) return 'W';
@@ -414,9 +273,6 @@ public class GameRoom {
         return 'S';
     }
 
-    /**
-     * Вспомогательный метод для получения противоположной стороны
-     */
     private char getOppositeSide(char side) {
         switch (side) {
             case 'N': return 'S';
@@ -426,6 +282,7 @@ public class GameRoom {
             default: return 'N';
         }
     }
+
 
     private void checkCityCompletionForTileN(int x, int y) {
         Tile placedTile = board[x][y];
@@ -453,37 +310,48 @@ public class GameRoom {
             }
         }
     }
-
     private void completeCity(int x1, int y1, int x2, int y2) {
         String cityKey = x1 + "," + y1 + "-" + x2 + "," + y2;
         String reverseKey = x2 + "," + y2 + "-" + x1 + "," + y1;
 
+        System.out.println("Координаты: (" + x1 + "," + y1 + ") и (" + x2 + "," + y2 + ")");
+        System.out.println("Ключ: " + cityKey);
+        System.out.println("Уже завершен? " + completedCities.containsKey(cityKey) +
+                " или " + completedCities.containsKey(reverseKey));
+
         if (completedCities.containsKey(cityKey) || completedCities.containsKey(reverseKey)) {
+            System.out.println("Город уже завершен - пропускаем");
             return;
         }
 
         completedCities.put(cityKey, true);
         String cityOwner = findCityOwner(x1, y1, x2, y2);
 
+        System.out.println("Владелец города: " + cityOwner);
+
         if ("DIVIDED".equals(cityOwner)) {
+            System.out.println("Город разделен между игроками");
             handleDividedCity(x1, y1, x2, y2);
             return;
         }
 
         if (cityOwner == null) {
+            System.out.println("Город завершен, но никто не владеет им!");
             broadcastChat("Город завершен, но никто не владеет им!");
             return;
         }
 
         Player player = playerInfo.get(cityOwner);
-        if (player == null) return;
+        if (player == null) {
+            System.out.println("Игрок не найден: " + cityOwner);
+            return;
+        }
 
         int points = 4;
         player.addScore(points);
         returnMeeplesForCity(x1, y1, x2, y2, cityOwner);
 
-        broadcastChat("=== ГОРОД ЗАВЕРШЕН! ===");
-        broadcastChat("Город из двух плиток tile-n.png завершен!");
+        System.out.println("Начислено " + points + " очков игроку " + cityOwner);
         broadcastChat("Владелец: " + cityOwner + " получает +" + points + " очков");
         broadcastScoreUpdate(cityOwner);
         broadcastGameState();
@@ -539,8 +407,7 @@ public class GameRoom {
         returnMeeplesForCity(x1, y1, x2, y2, player1.getName());
         returnMeeplesForCity(x1, y1, x2, y2, player2.getName());
 
-        broadcastChat("=== ГОРОД ЗАВЕРШЕН (РАЗДЕЛЕН)! ===");
-        broadcastChat("Город разделен между " + player1.getName() + " и " + player2.getName());
+
         broadcastChat("Каждый получает: +" + pointsEach + " очков");
 
         broadcastScoreUpdate(player1.getName());
@@ -577,7 +444,7 @@ public class GameRoom {
     }
 
     public void placeMeeple(String username) {
-        System.out.println("=== PLACE MEEPLE CALLED ===");
+
         System.out.println("Игрок: " + username);
         System.out.println("lastPlacedBy: " + lastPlacedBy);
         System.out.println("lastPlacedX,Y: " + lastPlacedX + "," + lastPlacedY);
@@ -601,11 +468,6 @@ public class GameRoom {
         Tile tile = board[lastPlacedX][lastPlacedY];
         Player player = playerInfo.get(username);
 
-        System.out.println("Плитка: " + tile.getFileName());
-        System.out.println("getType(): " + tile.getType());
-        System.out.println("canPlaceMeeple(): " + tile.canPlaceMeeple());
-        System.out.println("hasMeeple(): " + tile.hasMeeple());
-        System.out.println("У игрока миплов осталось: " + player.getMeeplesLeft());
 
         // 3. Проверка на развилку tile-l.png
         if ("tile-l.png".equals(tile.getFileName())) {
@@ -661,11 +523,9 @@ public class GameRoom {
         if (tileType.equals("ROAD")) {
             System.out.println("=== ОБРАБОТКА ДОРОГИ ===");
 
-            // ИСПРАВЛЕННАЯ ЛОГИКА: находим ТОЛЬКО текущий сегмент (до развилок)
-            List<Tile> currentSegment = findCurrentRoadSegmentOnly(tile.getX(), tile.getY());
+            List<Tile> currentSegment = findCompleteRoadSegment(tile.getX(), tile.getY());
             System.out.println("Текущий сегмент: " + currentSegment.size() + " плиток");
 
-            // Отладочный вывод
             for (Tile roadTile : currentSegment) {
                 System.out.println("  (" + roadTile.getX() + "," + roadTile.getY() +
                         ") - " + roadTile.getFileName() +
@@ -673,12 +533,10 @@ public class GameRoom {
                         ", владелец: " + (roadTile.hasMeeple() ? roadTile.getMeepleOwner() : "нет"));
             }
 
-            // Проверяем ТОЛЬКО в текущем сегменте наличие миплов других игроков
             boolean roadOccupiedByOther = false;
             String otherPlayerName = null;
 
             for (Tile roadTile : currentSegment) {
-                // Пропускаем развилки (на них нет миплов)
                 if ("tile-l.png".equals(roadTile.getFileName())) {
                     continue;
                 }
@@ -700,11 +558,10 @@ public class GameRoom {
                 return;
             }
 
-            // Проверяем, не поставил ли игрок уже мипл на ЭТУ ЧАСТЬ дороги
             boolean roadAlreadyHasOwnMeeple = false;
             for (Tile roadTile : currentSegment) {
                 if ("tile-l.png".equals(roadTile.getFileName())) {
-                    continue; // Пропускаем развилки
+                    continue;
                 }
 
                 if (roadTile.hasMeeple() && roadTile.getMeepleOwner().equals(player.getColor())) {
@@ -721,13 +578,12 @@ public class GameRoom {
                 return;
             }
 
-            // ВСЕ проверки пройдены - ставим мипл
             tile.setMeeple(true, player.getColor(), "ROAD");
             String key = tile.getX() + "," + tile.getY() + ":ROAD";
             objectOwners.put(key, player.getColor());
             player.useMeeple();
 
-            // Подсчитываем статистику для сообщения
+            // Подсчитываем статистику сегмента для сообщения
             int roadTilesInSegment = 0;
             int forksInSegment = 0;
 
@@ -740,7 +596,7 @@ public class GameRoom {
             }
 
             System.out.println("Мипл успешно поставлен на дорогу");
-            String broadcastMsg = username + " поставил мипла на дорогу (" + roadTilesInSegment + " плиток";
+            String broadcastMsg = username + " поставил мипла на дорогу (" + roadTilesInSegment + " плиток дороги";
             if (forksInSegment > 0) {
                 broadcastMsg += ", через " + forksInSegment + " развилок";
             }
@@ -748,12 +604,11 @@ public class GameRoom {
             broadcastChat(broadcastMsg);
 
         } else if (tileType.equals("MONASTERY")) {
-            System.out.println("=== ОБРАБОТКА МОНАСТЫРЯ ===");
+            System.out.println(" ОБРАБОТКА МОНАСТЫРЯ ");
 
             String objectKey = tile.getX() + "," + tile.getY() + ":MONASTERY";
             String existingOwner = objectOwners.get(objectKey);
 
-            // Проверяем, не занят ли этот монастырь
             if (existingOwner != null && !existingOwner.equals(player.getColor())) {
                 String otherPlayerName = getPlayerNameByColor(existingOwner);
                 String message = "Монастырь уже занят игроком " + otherPlayerName + "!";
@@ -762,7 +617,6 @@ public class GameRoom {
                 return;
             }
 
-            // Проверяем соседние монастыри (в радиусе 1 клетки)
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
                     if (dx == 0 && dy == 0) continue;
@@ -787,7 +641,6 @@ public class GameRoom {
                 }
             }
 
-            // ВСЕ проверки пройдены - ставим мипл
             tile.setMeeple(true, player.getColor(), "MONASTERY");
             objectOwners.put(objectKey, player.getColor());
             player.useMeeple();
@@ -796,12 +649,11 @@ public class GameRoom {
             broadcastChat(username + " поставил мипла на монастырь");
 
         } else if (tileType.equals("CITY")) {
-            System.out.println("=== ОБРАБОТКА ГОРОДА ===");
+            System.out.println("ОБРАБОТКА ГОРОДА ");
 
             if ("tile-n.png".equals(fileName)) {
                 System.out.println("Обработка tile-n.png как города");
 
-                // Для tile-n.png проверяем, не соединен ли он уже с другим tile-n.png
                 boolean isConnectedToOther = false;
                 int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
@@ -834,19 +686,14 @@ public class GameRoom {
                     return;
                 }
 
-                // ВСЕ проверки пройдены - ставим мипл на tile-n.png
                 tile.setMeeple(true, player.getColor(), "CITY");
                 String key = tile.getX() + "," + tile.getY() + ":CITY";
                 objectOwners.put(key, player.getColor());
                 player.useMeeple();
 
-                System.out.println("Мипл успешно поставлен на tile-n.png (город)");
-                broadcastChat(username + " поставил мипла на город (плитка tile-n.png)");
+                broadcastChat(username + " поставил мипла на город ");
 
             } else {
-                // Для обычных городов (не tile-n.png)
-                System.out.println("Обработка обычного города");
-
                 // Находим весь город
                 List<Tile> cityTiles = findConnectedCity(tile.getX(), tile.getY());
                 System.out.println("Найден город из " + cityTiles.size() + " плиток:");
@@ -889,7 +736,6 @@ public class GameRoom {
                     return;
                 }
 
-                // ВСЕ проверки пройдены - ставим мипл
                 tile.setMeeple(true, player.getColor(), "CITY");
                 String key = tile.getX() + "," + tile.getY() + ":CITY";
                 objectOwners.put(key, player.getColor());
@@ -900,7 +746,7 @@ public class GameRoom {
             }
 
         } else {
-            // Неизвестный тип плитки
+            // Неизвестный тип
             String message = "Нельзя поставить мипла на эту плитку! Неизвестный тип: " + tileType;
             System.out.println(message);
             getPlayer(username).sendMessage(new GameMessage("CHAT_MESSAGE", "SERVER", message));
@@ -908,10 +754,9 @@ public class GameRoom {
         }
 
         // 9. Обновляем состояние и передаем ход
-        broadcastAllScores(); // ИСПРАВЛЕНО: отправляем очки всем
+        broadcastAllScores();
         broadcastGameState();
 
-        // Сбрасываем информацию о последней размещенной плитке
         lastPlacedBy = null;
         lastPlacedX = -1;
         lastPlacedY = -1;
@@ -920,9 +765,7 @@ public class GameRoom {
         nextTurn();
     }
 
-    private List<Tile> findConnectedRoadSegment(int startX, int startY) {
-        return findRoadSegmentUntilFork(startX, startY, new HashSet<>());
-    }
+
 
     public void skipTurn(String username) {
         if (username.equals(lastPlacedBy)) {
@@ -951,7 +794,7 @@ public class GameRoom {
 
         calculateFinalScores();
         String winnerMessage = determineWinner();
-        String finalMessage = "=== ИГРА ОКОНЧЕНА ===\n" + reason + "\n\n" + winnerMessage;
+        String finalMessage = "ИГРА ОКОНЧЕНА \n" + reason + "\n\n" + winnerMessage;
 
         for (ClientHandler player : players) {
             player.sendMessage(new GameMessage("GAME_END", "SERVER", finalMessage));
@@ -961,22 +804,18 @@ public class GameRoom {
     }
 
     private void calculateFinalScores() {
-        System.out.println("=== ПОДСЧЕТ ФИНАЛЬНЫХ ОЧКОВ ===");
 
-        // Сохраняем начальные очки
         Map<String, Integer> initialScores = new HashMap<>();
         for (Player player : playerInfo.values()) {
             initialScores.put(player.getName(), player.getScore());
             System.out.println(player.getName() + " начальные очки: " + player.getScore());
         }
 
-        // Подсчет очков в правильном порядке
         calculateRoadScores();
         calculateCityScores();
         calculateMonasteryScores();
 
-        // Выводим итоги
-        System.out.println("=== ИТОГОВЫЕ ОЧКИ ===");
+        System.out.println("ИТОГОВЫЕ ОЧКИ ");
         for (Player player : playerInfo.values()) {
             int initial = initialScores.get(player.getName());
             int added = player.getScore() - initial;
@@ -986,315 +825,211 @@ public class GameRoom {
     }
 
     private void calculateRoadScores() {
-        System.out.println("=== ПОДСЧЕТ ОЧКОВ ЗА ДОРОГИ ===");
+        System.out.println("\nПОДСЧЕТ ОЧКОВ ЗА ДОРОГИ ");
+
         Set<String> visited = new HashSet<>();
+        Set<String> processedSegments = new HashSet<>();
+        Set<String> countedForks = new HashSet<>();
 
         for (int x = 0; x < 15; x++) {
             for (int y = 0; y < 15; y++) {
                 Tile tile = board[x][y];
 
-                // Ищем только ОБЫЧНЫЕ ДОРОГИ (не развилки)
                 if (tile != null &&
                         tile.getType().equals("ROAD") &&
                         !"tile-l.png".equals(tile.getFileName()) &&
                         !visited.contains(x + "," + y)) {
 
-                    System.out.println("\nНачинаем подсчет дороги с плитки в (" + x + "," + y + ")");
+                    List<Tile> segment = findCompleteRoadSegment(x, y);
 
-                    // Находим сегмент дороги ДО развилки
-                    List<Tile> roadSegment = findCurrentRoadSegmentOnly(x, y);
+                    if (segment.isEmpty()) continue;
 
-                    // Фильтруем: оставляем только обычные дороги
-                    List<Tile> roadsOnly = new ArrayList<>();
-                    List<Tile> forksInSegment = new ArrayList<>();
+                    // Генерируем уникальный ключ для сегмента
+                    String segmentKey = generateSegmentKey(segment);
 
-                    for (Tile roadTile : roadSegment) {
-                        if ("tile-l.png".equals(roadTile.getFileName())) {
-                            forksInSegment.add(roadTile);
-                            System.out.println("  Найден разделитель (развилка) в (" +
-                                    roadTile.getX() + "," + roadTile.getY() + ")");
-                        } else {
-                            roadsOnly.add(roadTile);
+                    if (processedSegments.contains(segmentKey)) {
+                        for (Tile roadTile : segment) {
                             visited.add(roadTile.getX() + "," + roadTile.getY());
                         }
+                        continue;
                     }
 
-                    if (!roadsOnly.isEmpty()) {
-                        System.out.println("Дорожный сегмент из " + roadsOnly.size() + " плиток дорог");
-                        System.out.println("Развилок в сегменте: " + forksInSegment.size());
+                    System.out.println("\nОбработка сегмента дороги из " + segment.size() + " плиток:");
+                    for (Tile roadTile : segment) {
+                        System.out.println("  Плитка (" + roadTile.getX() + "," + roadTile.getY() +
+                                "), мипл: " + roadTile.hasMeeple() +
+                                ", владелец: " + (roadTile.hasMeeple() ? getPlayerNameByColor(roadTile.getMeepleOwner()) : "нет"));
+                    }
 
-                        // Проверяем, является ли это отдельным сегментом после развилки
-                        boolean isSegmentAfterFork = false;
-                        if (!forksInSegment.isEmpty()) {
-                            // Проверяем, есть ли дороги ДО развилки
-                            for (Tile fork : forksInSegment) {
-                                int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-                                for (int[] dir : directions) {
-                                    int nx = fork.getX() + dir[0];
-                                    int ny = fork.getY() + dir[1];
+                    String firstOwnerColor = null;
 
-                                    if (nx >= 0 && nx < 15 && ny >= 0 && ny < 15) {
-                                        Tile neighbor = board[nx][ny];
-                                        if (neighbor != null && neighbor.getType().equals("ROAD") &&
-                                                !"tile-l.png".equals(neighbor.getFileName())) {
-                                            // Проверяем соединение
-                                            char forkSide = fork.getSide(getDirectionChar(dir));
-                                            char neighborSide = neighbor.getSide(getOppositeDirectionChar(dir));
-
-                                            if (forkSide == 'S' && neighborSide == 'S') {
-                                                // Это соединение дороги с развилкой
-                                                // Проверяем, есть ли в этом направлении другая дорога
-                                                isSegmentAfterFork = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                if (isSegmentAfterFork) break;
-                            }
+                    for (Tile roadTile : segment) {
+                        if (roadTile.hasMeeple()) {
+                            firstOwnerColor = roadTile.getMeepleOwner();
+                            System.out.println("  Первый владелец всего сегмента: " +
+                                    getPlayerNameByColor(firstOwnerColor) +
+                                    " на плитке (" + roadTile.getX() + "," + roadTile.getY() + ")");
+                            break;
                         }
+                    }
 
-                        // Подсчитываем владельцев миплов ТОЛЬКО на обычных дорогах
-                        Map<String, Integer> ownerCount = new HashMap<>();
-                        Map<String, List<Tile>> ownerTiles = new HashMap<>();
-
-                        for (Tile roadTile : roadsOnly) {
-                            System.out.println("  Плитка (" + roadTile.getX() + "," + roadTile.getY() +
-                                    "), файл: " + roadTile.getFileName() +
-                                    ", мипл: " + roadTile.hasMeeple() +
-                                    ", владелец: " + (roadTile.hasMeeple() ? roadTile.getMeepleOwner() : "нет"));
-
-                            if (roadTile.hasMeeple()) {
-                                String owner = roadTile.getMeepleOwner();
-                                ownerCount.put(owner, ownerCount.getOrDefault(owner, 0) + 1);
-
-                                if (!ownerTiles.containsKey(owner)) {
-                                    ownerTiles.put(owner, new ArrayList<>());
-                                }
-                                ownerTiles.get(owner).add(roadTile);
-                            }
+                    // Если никто не занял дорогу - пропускаем
+                    if (firstOwnerColor == null) {
+                        System.out.println("  Вся дорога никем не занята");
+                        for (Tile roadTile : segment) {
+                            visited.add(roadTile.getX() + "," + roadTile.getY());
                         }
+                        processedSegments.add(segmentKey);
+                        continue;
+                    }
 
-                        int totalPoints = roadsOnly.size(); // 1 очко за каждую плитку дороги
-                        System.out.println("Всего очков за сегмент: " + totalPoints);
-
-                        if (!ownerCount.isEmpty()) {
-                            // Находим игрока с большинством миплов
-                            String majorityOwner = null;
-                            int maxCount = 0;
-                            boolean tie = false;
-
-                            for (Map.Entry<String, Integer> entry : ownerCount.entrySet()) {
-                                System.out.println("  Игрок " + entry.getKey() + ": " + entry.getValue() + " миплов");
-                                if (entry.getValue() > maxCount) {
-                                    maxCount = entry.getValue();
-                                    majorityOwner = entry.getKey();
-                                    tie = false;
-                                } else if (entry.getValue() == maxCount) {
-                                    tie = true;
-                                }
-                            }
-
-                            if (!tie && majorityOwner != null) {
-                                // Один игрок владеет большинством миплов
-                                Player player = getPlayerByColor(majorityOwner);
-                                if (player != null) {
-                                    int oldScore = player.getScore();
-                                    player.addScore(totalPoints);
-
-                                    String segmentType = isSegmentAfterFork ? "Сегмент дороги после развилки" : "Дорога";
-                                    broadcastChat(segmentType + " (" + totalPoints + " плиток, через " +
-                                            forksInSegment.size() + " развилок): " +
-                                            player.getName() + " +" + totalPoints + " очков");
-
-                                    System.out.println(player.getName() + " получает " + totalPoints +
-                                            " очков (" + oldScore + " -> " + player.getScore() + ")");
-
-                                    // Возвращаем миплы
-                                    for (Tile meepleTile : ownerTiles.get(majorityOwner)) {
-                                        meepleTile.setMeeple(false, null, null);
-                                        player.returnMeeple();
-                                    }
-                                }
-                            } else if (tie) {
-                                // Ничья - делим очки поровну
-                                int pointsEach = totalPoints / ownerCount.size();
-                                int remainder = totalPoints % ownerCount.size();
-
-                                System.out.println("Ничья! Делим " + totalPoints + " очков");
-
-                                List<String> owners = new ArrayList<>(ownerCount.keySet());
-
-                                // Распределяем очки поровну, остаток никому не даем
-                                for (int i = 0; i < owners.size(); i++) {
-                                    String owner = owners.get(i);
-                                    Player player = getPlayerByColor(owner);
-                                    if (player != null) {
-                                        int pointsToAdd = pointsEach;
-                                        player.addScore(pointsToAdd);
-
-                                        String segmentType = isSegmentAfterFork ? "Сегмент дороги после развилки (разделен)" : "Дорога (разделена)";
-                                        broadcastChat(segmentType + ": " + player.getName() +
-                                                " +" + pointsToAdd + " очков");
-
-                                        System.out.println(player.getName() + " получает " + pointsToAdd + " очков");
-
-                                        // Возвращаем миплы
-                                        List<Tile> tiles = ownerTiles.get(owner);
-                                        if (tiles != null) {
-                                            for (Tile meepleTile : tiles) {
-                                                meepleTile.setMeeple(false, null, null);
-                                                player.returnMeeple();
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            // Нет миплов на дороге
-                            String segmentType = isSegmentAfterFork ? "Сегмент дороги после развилки" : "Дорога";
-                            broadcastChat(segmentType + " (" + totalPoints + " плиток, через " +
-                                    forksInSegment.size() + " развилок): нет миплов → 0 очков");
-                            System.out.println("Нет миплов на дороге → 0 очков");
+                    Player firstOwner = getPlayerByColor(firstOwnerColor);
+                    if (firstOwner == null) {
+                        for (Tile roadTile : segment) {
+                            visited.add(roadTile.getX() + "," + roadTile.getY());
                         }
+                        processedSegments.add(segmentKey);
+                        continue;
+                    }
 
-                        System.out.println("--- Конец сегмента ---");
+                    // ПОДСЧЕТ ОЧКОВ ЗА ВЕСЬ СЕГМЕНТ
+                    int basePoints = segment.size();
+
+                    int forkBonus = 0;
+                    for (Tile roadTile : segment) {
+                        forkBonus += countConnectedForks(roadTile, countedForks);
+                    }
+
+                    int totalPoints = basePoints + forkBonus;
+
+                    System.out.println("  Всего плиток в сегменте: " + segment.size());
+                    System.out.println("  Базовые очки: " + basePoints);
+                    System.out.println("  Бонус за развилки: " + forkBonus);
+                    System.out.println("  Всего очков для первого владельца: " + totalPoints);
+
+                    // НАЧИСЛЯЕМ ОЧКИ ТОЛЬКО ПЕРВОМУ ВЛАДЕЛЬЦУ
+                    firstOwner.addScore(totalPoints);
+
+                    // ВОЗВРАЩАЕМ МИПЛЫ ТОЛЬКО ПЕРВОГО ВЛАДЕЛЬЦА
+                    for (Tile roadTile : segment) {
+                        if (roadTile.hasMeeple() &&
+                                roadTile.getMeepleOwner().equals(firstOwnerColor)) {
+                            roadTile.setMeeple(false, null, null);
+                            firstOwner.returnMeeple();
+                        }
+                    }
+
+                    String ownerName = getPlayerNameByColor(firstOwnerColor);
+                    broadcastChat("Дорога (" + segment.size() + " плиток): " +
+                            ownerName + " +" + totalPoints + " очков");
+
+                    // Помечаем как обработанные
+                    processedSegments.add(segmentKey);
+                    for (Tile roadTile : segment) {
+                        visited.add(roadTile.getX() + "," + roadTile.getY());
                     }
                 }
             }
         }
-
-        // Проверяем, не остались ли дороги, начинающиеся от развилок
-        System.out.println("\n=== ПРОВЕРКА ДОРОГ ОТ РАЗВИЛОК ===");
-        for (int x = 0; x < 15; x++) {
-            for (int y = 0; y < 15; y++) {
-                Tile tile = board[x][y];
-                // Ищем развилки
-                if (tile != null && "tile-l.png".equals(tile.getFileName())) {
-
-                    // Проверяем все направления от развилки
-                    int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-                    for (int[] dir : directions) {
-                        int nx = x + dir[0];
-                        int ny = y + dir[1];
-
-                        if (nx >= 0 && nx < 15 && ny >= 0 && ny < 15) {
-                            Tile neighbor = board[nx][ny];
-                            // Ищем дороги, соединенные с развилкой
-                            if (neighbor != null &&
-                                    neighbor.getType().equals("ROAD") &&
-                                    !"tile-l.png".equals(neighbor.getFileName()) &&
-                                    !visited.contains(nx + "," + ny)) {
-
-                                // Проверяем соединение
-                                char forkSide = tile.getSide(getDirectionChar(dir));
-                                char neighborSide = neighbor.getSide(getOppositeDirectionChar(dir));
-
-                                if (forkSide == 'S' && neighborSide == 'S') {
-                                    System.out.println("Найдена дорога, начинающаяся от развилки в (" + nx + "," + ny + ")");
-
-                                    // Находим сегмент этой дороги
-                                    List<Tile> roadSegment = findCurrentRoadSegmentOnly(nx, ny);
-
-                                    List<Tile> roadsOnly = new ArrayList<>();
-                                    List<Tile> forksInSegment = new ArrayList<>();
-
-                                    for (Tile roadTile : roadSegment) {
-                                        if ("tile-l.png".equals(roadTile.getFileName())) {
-                                            forksInSegment.add(roadTile);
-                                        } else {
-                                            roadsOnly.add(roadTile);
-                                            visited.add(roadTile.getX() + "," + roadTile.getY());
-                                        }
-                                    }
-
-                                    if (!roadsOnly.isEmpty()) {
-                                        System.out.println("Сегмент от развилки: " + roadsOnly.size() + " плиток");
-
-                                        // Подсчет очков для этого сегмента
-                                        Map<String, Integer> ownerCount = new HashMap<>();
-                                        Map<String, List<Tile>> ownerTiles = new HashMap<>();
-
-                                        for (Tile roadTile : roadsOnly) {
-                                            if (roadTile.hasMeeple()) {
-                                                String owner = roadTile.getMeepleOwner();
-                                                ownerCount.put(owner, ownerCount.getOrDefault(owner, 0) + 1);
-
-                                                if (!ownerTiles.containsKey(owner)) {
-                                                    ownerTiles.put(owner, new ArrayList<>());
-                                                }
-                                                ownerTiles.get(owner).add(roadTile);
-                                            }
-                                        }
-
-                                        int totalPoints = roadsOnly.size();
-
-                                        if (!ownerCount.isEmpty()) {
-                                            String majorityOwner = null;
-                                            int maxCount = 0;
-                                            boolean tie = false;
-
-                                            for (Map.Entry<String, Integer> entry : ownerCount.entrySet()) {
-                                                if (entry.getValue() > maxCount) {
-                                                    maxCount = entry.getValue();
-                                                    majorityOwner = entry.getKey();
-                                                    tie = false;
-                                                } else if (entry.getValue() == maxCount) {
-                                                    tie = true;
-                                                }
-                                            }
-
-                                            if (!tie && majorityOwner != null) {
-                                                Player player = getPlayerByColor(majorityOwner);
-                                                if (player != null) {
-                                                    player.addScore(totalPoints);
-                                                    broadcastChat("Сегмент дороги от развилки (" + totalPoints +
-                                                            " плиток): " + player.getName() + " +" + totalPoints + " очков");
-
-                                                    // Возвращаем миплы
-                                                    for (Tile meepleTile : ownerTiles.get(majorityOwner)) {
-                                                        meepleTile.setMeeple(false, null, null);
-                                                        player.returnMeeple();
-                                                    }
-                                                }
-                                            } else if (tie) {
-                                                int pointsEach = totalPoints / ownerCount.size();
-                                                for (String owner : ownerCount.keySet()) {
-                                                    Player player = getPlayerByColor(owner);
-                                                    if (player != null) {
-                                                        player.addScore(pointsEach);
-                                                        broadcastChat("Сегмент дороги от развилки (разделен): " +
-                                                                player.getName() + " +" + pointsEach + " очков");
-
-                                                        // Возвращаем миплы
-                                                        List<Tile> tiles = ownerTiles.get(owner);
-                                                        if (tiles != null) {
-                                                            for (Tile meepleTile : tiles) {
-                                                                meepleTile.setMeeple(false, null, null);
-                                                                player.returnMeeple();
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            broadcastChat("Сегмент дороги от развилки (" + totalPoints +
-                                                    " плиток): нет миплов → 0 очков");
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        System.out.println("=== ЗАВЕРШЕН ПОДСЧЕТ ОЧКОВ ЗА ДОРОГИ ===");
     }
-    /**
-     * Находит ТОЛЬКО текущий сегмент дороги (до развилок)
-     */
+    private int countConnectedForks(Tile roadTile, Set<String> countedForks) {
+        int forkCount = 0;
+        int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+
+        for (int[] dir : directions) {
+            int nx = roadTile.getX() + dir[0];
+            int ny = roadTile.getY() + dir[1];
+
+            if (nx >= 0 && nx < 15 && ny >= 0 && ny < 15) {
+                Tile neighbor = board[nx][ny];
+                if (neighbor != null && "tile-l.png".equals(neighbor.getFileName())) {
+                    char tileSide = roadTile.getSide(getDirectionChar(dir));
+                    char forkSide = neighbor.getSide(getOppositeDirectionChar(dir));
+
+                    if (tileSide == 'S' && forkSide == 'S') {
+                        String forkKey = nx + "," + ny;
+                        if (!countedForks.contains(forkKey)) {
+                            forkCount++;
+                            countedForks.add(forkKey);
+                            System.out.println("  + Развилка в (" + nx + "," + ny + ") учтена");
+                        } else {
+                            System.out.println("  - Развилка в (" + nx + "," + ny + ") уже учтена ранее");
+                        }
+                    }
+                }
+            }
+        }
+
+        return forkCount;
+    }
+
+    private List<Tile> findCompleteRoadSegment(int startX, int startY) {
+        List<Tile> segment = new ArrayList<>();
+        Set<String> visited = new HashSet<>();
+        Queue<int[]> queue = new LinkedList<>();
+
+        queue.add(new int[]{startX, startY});
+
+        while (!queue.isEmpty()) {
+            int[] current = queue.poll();
+            int x = current[0];
+            int y = current[1];
+            String key = x + "," + y;
+
+            if (visited.contains(key)) continue;
+
+            Tile tile = board[x][y];
+            if (tile == null) continue;
+
+            if (!tile.getType().equals("ROAD") ||
+                    "tile-l.png".equals(tile.getFileName())) {
+                continue;
+            }
+
+            visited.add(key);
+            segment.add(tile);
+
+            // Ищем всех соседей-дорог
+            int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+            for (int[] dir : directions) {
+                int nx = x + dir[0];
+                int ny = y + dir[1];
+
+                if (nx >= 0 && nx < 15 && ny >= 0 && ny < 15) {
+                    Tile neighbor = board[nx][ny];
+                    if (neighbor == null) continue;
+
+                    if ("tile-l.png".equals(neighbor.getFileName())) {
+                        // Развилка останавливает поиск в этом направлении
+                        continue;
+                    }
+
+                    if (!neighbor.getType().equals("ROAD")) continue;
+
+                    String neighborKey = nx + "," + ny;
+                    if (visited.contains(neighborKey)) continue;
+
+                    char side1 = tile.getSide(getDirectionChar(dir));
+                    char side2 = neighbor.getSide(getOppositeDirectionChar(dir));
+
+                    if (side1 == 'S' && side2 == 'S') {
+                        queue.add(new int[]{nx, ny});
+                    }
+                }
+            }
+        }
+
+        return segment;
+    }
+    private String generateSegmentKey(List<Tile> segment) {
+        List<String> positions = new ArrayList<>();
+        for (Tile tile : segment) {
+            positions.add(tile.getX() + "," + tile.getY());
+        }
+        Collections.sort(positions);
+        return String.join("|", positions);
+    }
+
     private List<Tile> findCurrentRoadSegmentOnly(int startX, int startY) {
         List<Tile> segment = new ArrayList<>();
         Set<String> visited = new HashSet<>();
@@ -1313,21 +1048,16 @@ public class GameRoom {
             Tile tile = board[x][y];
             if (tile == null) continue;
 
-            // Включаем только дороги и развилки
-            boolean isRoadRelated = tile.getType().equals("ROAD") ||
-                    "tile-l.png".equals(tile.getFileName());
+            boolean isRoad = tile.getType().equals("ROAD");
+            boolean isSpecialTile = "tile-l.png".equals(tile.getFileName()) ||
+                    "tile-n.png".equals(tile.getFileName()) ||
+                    "tile-monastery.png".equals(tile.getFileName());
 
-            if (!isRoadRelated) continue;
+            if (!isRoad || isSpecialTile) continue;
 
             visited.add(key);
             segment.add(tile);
 
-            // Если это развилка - ОСТАНАВЛИВАЕМСЯ, не идем дальше
-            if ("tile-l.png".equals(tile.getFileName())) {
-                continue;
-            }
-
-            // Ищем соседей-дорог
             int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
             for (int[] dir : directions) {
                 int nx = x + dir[0];
@@ -1337,10 +1067,12 @@ public class GameRoom {
                     Tile neighbor = board[nx][ny];
                     if (neighbor != null && !visited.contains(nx + "," + ny)) {
 
-                        boolean neighborIsRoadRelated = neighbor.getType().equals("ROAD") ||
-                                "tile-l.png".equals(neighbor.getFileName());
+                        boolean neighborIsRoad = neighbor.getType().equals("ROAD");
+                        boolean neighborIsSpecial = "tile-l.png".equals(neighbor.getFileName()) ||
+                                "tile-n.png".equals(neighbor.getFileName()) ||
+                                "tile-monastery.png".equals(neighbor.getFileName());
 
-                        if (neighborIsRoadRelated) {
+                        if (neighborIsRoad && !neighborIsSpecial) {
                             // Проверяем соединение
                             char side1 = tile.getSide(getDirectionChar(dir));
                             char side2 = neighbor.getSide(getOppositeDirectionChar(dir));
@@ -1355,9 +1087,6 @@ public class GameRoom {
         }
 
         return segment;
-    }
-    private List<Tile> findCompleteRoadSegment(int startX, int startY) {
-        return findConnectedRoadSegment(startX, startY); // Используем тот же метод
     }
 
     private void calculateMonasteryScores() {
@@ -1400,10 +1129,8 @@ public class GameRoom {
         }
         return count;
     }
-
-
     private void calculateCityScores() {
-        System.out.println("Подсчет очков за города...");
+        System.out.println("\n=== ПОДСЧЕТ ОЧКОВ ЗА ГОРОДА ===");
         Set<String> visited = new HashSet<>();
 
         for (int x = 0; x < 15; x++) {
@@ -1414,7 +1141,7 @@ public class GameRoom {
                     List<Tile> city = findConnectedCity(x, y);
                     boolean isTileNCity = false;
 
-                    // Проверяем, не завершен ли город tile-n.png
+                    // Проверяем, не завершен ли город
                     for (Tile cityTile : city) {
                         if ("tile-n.png".equals(cityTile.getFileName())) {
                             isTileNCity = true;
@@ -1422,19 +1149,27 @@ public class GameRoom {
                         }
                     }
 
-                    // Пропускаем завершенные города tile-n.png
+                    // Отладка ДО проверки alreadyCompleted
+                    System.out.println("\nНайден город из " + city.size() + " плиток:");
+                    for (Tile cityTile : city) {
+                        System.out.println("  (" + cityTile.getX() + "," + cityTile.getY() +
+                                ") - " + cityTile.getFileName());
+                    }
+
                     if (isTileNCity) {
                         boolean alreadyCompleted = false;
                         for (Tile cityTile : city) {
                             for (String completedKey : completedCities.keySet()) {
                                 if (completedKey.contains(cityTile.getX() + "," + cityTile.getY())) {
                                     alreadyCompleted = true;
+                                    System.out.println("Плитка уже в completedCities: " + completedKey);
                                     break;
                                 }
                             }
                             if (alreadyCompleted) break;
                         }
                         if (alreadyCompleted) {
+                            System.out.println("Пропускаем tile-n.png город - уже учтен");
                             broadcastChat("Завершенный город (tile-n.png) уже учтен ранее");
                             continue;
                         }
@@ -1446,21 +1181,28 @@ public class GameRoom {
                         if (cityTile.hasMeeple()) {
                             String owner = cityTile.getMeepleOwner();
                             ownerCount.put(owner, ownerCount.getOrDefault(owner, 0) + 1);
+                            System.out.println("  Мипл на плитке: владелец=" + getPlayerNameByColor(owner));
                         }
                     }
 
-                    // Незавершенный город: 1 очко за плитку, завершенный: 2 очка за плитку
+                    // Критически важная проверка!
                     boolean isCompleted = isCityCompleted(city);
                     int pointsPerTile = isCompleted ? 2 : 1;
                     int totalPoints = city.size() * pointsPerTile;
 
+                    System.out.println("Результат проверки завершенности: " + (isCompleted ? "ЗАВЕРШЕН" : "НЕЗАВЕРШЕН"));
+                    System.out.println("Очков за плитку: " + pointsPerTile);
+                    System.out.println("Всего очков: " + totalPoints);
+
                     if (!ownerCount.isEmpty()) {
-                        // Находим игрока с большинством миплов
+                        // Определяем владельца
                         String majorityOwner = null;
                         int maxCount = 0;
                         boolean tie = false;
 
                         for (Map.Entry<String, Integer> entry : ownerCount.entrySet()) {
+                            System.out.println("  Игрок " + getPlayerNameByColor(entry.getKey()) +
+                                    ": " + entry.getValue() + " миплов");
                             if (entry.getValue() > maxCount) {
                                 maxCount = entry.getValue();
                                 majorityOwner = entry.getKey();
@@ -1471,28 +1213,36 @@ public class GameRoom {
                         }
 
                         String status = isCompleted ? "Завершенный город" : "Незавершенный город";
+                        System.out.println("Статус: " + status);
 
                         if (!tie && majorityOwner != null) {
                             Player player = getPlayerByColor(majorityOwner);
                             if (player != null) {
                                 player.addScore(totalPoints);
+                                System.out.println("Начисляем " + totalPoints + " очков игроку " + player.getName());
+
                                 broadcastChat(status + " (" + city.size() + " плиток): " +
                                         player.getName() + " +" + totalPoints + " очков");
 
-                                // Возвращаем миплы для завершенных городов
+                                // Возвращаем миплы ТОЛЬКО для завершенных городов
                                 if (isCompleted) {
+                                    int returnedMeeples = 0;
                                     for (Tile cityTile : city) {
                                         if (cityTile.hasMeeple() &&
                                                 cityTile.getMeepleOwner().equals(majorityOwner)) {
                                             cityTile.setMeeple(false, null, null);
                                             player.returnMeeple();
+                                            returnedMeeples++;
                                         }
                                     }
+                                    System.out.println("Возвращено миплов: " + returnedMeeples);
                                 }
                             }
                         } else if (tie) {
                             // Ничья - делим очки поровну
                             int pointsEach = totalPoints / ownerCount.size();
+                            System.out.println("НИЧЬЯ! Каждый получает по " + pointsEach + " очков");
+
                             for (String owner : ownerCount.keySet()) {
                                 Player player = getPlayerByColor(owner);
                                 if (player != null) {
@@ -1515,6 +1265,7 @@ public class GameRoom {
                         }
                     } else {
                         String status = isCompleted ? "Завершенный город" : "Незавершенный город";
+                        System.out.println("Нет миплов в городе → 0 очков");
                         broadcastChat(status + " (" + city.size() + " плиток): нет миплов → 0 очков");
                     }
 
@@ -1525,8 +1276,8 @@ public class GameRoom {
                 }
             }
         }
+        System.out.println(" ЗАВЕРШЕН ПОДСЧЕТ ГОРОДОВ \n");
     }
-
     private boolean isCityCompleted(List<Tile> city) {
         for (Tile tile : city) {
             int x = tile.getX();
@@ -1545,32 +1296,22 @@ public class GameRoom {
 
                     if (nx >= 0 && nx < 15 && ny >= 0 && ny < 15) {
                         Tile neighbor = board[nx][ny];
-                        if (neighbor == null) {
-                            return false; // Нет соседа - город не завершен
-                        } else {
-                            // Проверяем, является ли сосед частью этого же города
-                            boolean neighborInCity = false;
-                            for (Tile cityTile : city) {
-                                if (cityTile.getX() == nx && cityTile.getY() == ny) {
-                                    neighborInCity = true;
-                                    break;
-                                }
-                            }
 
-                            if (!neighborInCity) {
-                                // Сосед есть, но не в этом городе
-                                char oppositeSide = getOppositeSide(side);
-                                if (neighbor.getSide(oppositeSide) != 'C') {
-                                    return false;
-                                }
-                            }
+                        if (neighbor == null) {
+                            return false;
+                        }
+
+                        char oppositeSide = getOppositeSide(side);
+                        if (neighbor.getSide(oppositeSide) != 'C') {
+                            return false;
                         }
                     } else {
-                        return false; // Выход за границы поля
+                        return false;
                     }
                 }
             }
         }
+
         return true;
     }
 
@@ -1627,7 +1368,7 @@ public class GameRoom {
     private String getPlacementOptionsMessage(Tile tile, String username) {
         StringBuilder message = new StringBuilder();
 
-        // Определяем тип плитки правильно
+
         String tileType;
         String fileName = tile.getFileName();
 
@@ -1656,10 +1397,9 @@ public class GameRoom {
             message.append("Пропустите ход (S)");
 
         } else if ("tile-n.png".equals(fileName)) {
-            // ГОРОД tile-n.png
             message.append(" (часть города). ");
 
-            // Проверяем, не соединен ли уже с другим tile-n.png
+
             boolean isConnectedToOther = false;
             int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
@@ -1695,21 +1435,15 @@ public class GameRoom {
             // ПЛИТКИ, НА КОТОРЫЕ МОЖНО СТАВИТЬ МИПЛА
 
             if (tileType.equals("ROAD")) {
-                // ========== ОБРАБОТКА ДОРОГ ==========
                 message.append(" (дорога). ");
 
-                // НОВАЯ ЛОГИКА: находим ТОЛЬКО текущий сегмент
                 List<Tile> currentSegment = findCurrentRoadSegmentOnly(tile.getX(), tile.getY());
 
-                // Проверяем ТОЛЬКО текущий сегмент
+                // Проверяем ТОЛЬКО текущий сегмент дороги
                 boolean roadOccupiedByOther = false;
                 String otherPlayerName = null;
 
                 for (Tile roadTile : currentSegment) {
-                    if ("tile-l.png".equals(roadTile.getFileName())) {
-                        continue; // Пропускаем развилки
-                    }
-
                     if (roadTile.hasMeeple() && !roadTile.getMeepleOwner().equals(player.getColor())) {
                         roadOccupiedByOther = true;
                         otherPlayerName = getPlayerNameByColor(roadTile.getMeepleOwner());
@@ -1755,17 +1489,43 @@ public class GameRoom {
                             }
                         }
 
+                        // Проверяем, соединена ли дорога с развилкой
+                        boolean connectedToFork = false;
+                        int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+
+                        for (int[] dir : directions) {
+                            int nx = tile.getX() + dir[0];
+                            int ny = tile.getY() + dir[1];
+
+                            if (nx >= 0 && nx < 15 && ny >= 0 && ny < 15) {
+                                Tile neighbor = board[nx][ny];
+                                if (neighbor != null && "tile-l.png".equals(neighbor.getFileName())) {
+                                    char tileSide = tile.getSide(getDirectionChar(dir));
+                                    char forkSide = neighbor.getSide(getOppositeDirectionChar(dir));
+
+                                    if (tileSide == 'S' && forkSide == 'S') {
+                                        connectedToFork = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (connectedToFork) {
+                            message.append("ЭТА ДОРОГА СОЕДИНЕНА С РАЗВИЛКОЙ! ");
+                        }
+
                         message.append("Вы можете поставить мипла на дорогу (M) ");
                         message.append("(").append(roadTiles).append(" плиток дороги");
                         if (forks > 0) {
                             message.append(", через ").append(forks).append(" развилок");
                         }
-                        message.append(") или пропустить ход (S)");
+                        message.append(") или пропустить ход ");
                     }
                 }
 
             } else if (tileType.equals("MONASTERY")) {
-                // ========== ОБРАБОТКА МОНАСТЫРЯ ==========
+                // МОНАСТЫРЯ
                 message.append(" (монастырь). ");
 
                 // Проверяем, не занят ли уже этот монастырь
@@ -1808,14 +1568,14 @@ public class GameRoom {
 
                     if (hasNearbyMonastery) {
                         message.append("Рядом уже есть монастырь игрока ").append(nearbyPlayerName).append("! ");
-                        message.append("Пропустите ход (S)");
+                        message.append("Пропустите ход ");
                     } else {
-                        message.append("Вы можете поставить мипла на монастырь (M) или пропустить ход (S)");
+                        message.append("Вы можете поставить мипла на монастырь  или пропустить ход ");
                     }
                 }
 
             } else if (tileType.equals("CITY")) {
-                // ========== ОБРАБОТКА ГОРОДА (кроме tile-n.png) ==========
+                //ОБРАБОТКА ГОРОДА
                 message.append(" (город). ");
 
                 if (player.getMeeplesLeft() <= 0) {
@@ -1842,25 +1602,25 @@ public class GameRoom {
 
                     if (hasConflict) {
                         message.append("Город уже частично занят разными игроками! ");
-                        message.append("Пропустите ход (S)");
+                        message.append("Пропустите ход ");
                     } else if (existingCityOwner != null && !existingCityOwner.equals(player.getColor())) {
                         String otherPlayerName = getPlayerNameByColor(existingCityOwner);
                         message.append("Город уже занят игроком ").append(otherPlayerName).append("! ");
-                        message.append("Пропустите ход (S)");
+                        message.append("Пропустите ход ");
                     } else {
-                        message.append("Вы можете поставить мипла на город (M) ");
-                        message.append("(").append(cityTiles.size()).append(" плиток) или пропустить ход (S)");
+                        message.append("Вы можете поставить мипла на город  ");
+                        message.append("(").append(cityTiles.size()).append(" плиток) или пропустить ход ");
                     }
                 }
 
             } else {
                 // НЕИЗВЕСТНЫЙ ТИП
-                message.append(". Нельзя поставить мипла на эту плитку. Пропустите ход (S)");
+                message.append(". Нельзя поставить мипла на эту плитку. Пропустите ход ");
             }
 
         } else {
             // НЕЛЬЗЯ СТАВИТЬ МИПЛА
-            message.append(". Нельзя поставить мипла на эту плитку. Пропустите ход (S)");
+            message.append(". Нельзя поставить мипла на эту плитку. Пропустите ход ");
         }
 
         return message.toString();
@@ -1952,18 +1712,6 @@ public class GameRoom {
             }
         }
         return "неизвестный игрок";
-    }
-
-    private int countTilesOnBoard() {
-        int count = 0;
-        for (int row = 0; row < 15; row++) {
-            for (int col = 0; col < 15; col++) {
-                if (board[row][col] != null) {
-                    count++;
-                }
-            }
-        }
-        return count;
     }
 
     public int getPlayerCount() {

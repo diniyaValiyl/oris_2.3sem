@@ -3,7 +3,6 @@ package carcasson.client;
 import carcasson.controller.AppController;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 
 public class LobbyPanel extends JPanel {
     private AppController controller;
@@ -15,7 +14,6 @@ public class LobbyPanel extends JPanel {
         setLayout(new BorderLayout());
 
         try {
-            // Загружаем фон из папки resources
             ImageIcon bgIcon = new ImageIcon(getClass().getResource("/background_menu.jpg"));
             JLabel bgLabel = new JLabel(bgIcon);
             bgLabel.setLayout(new GridBagLayout());
@@ -37,21 +35,15 @@ public class LobbyPanel extends JPanel {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        JLabel titleLabel = new JLabel("КАРКАССОН", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 36));
-        titleLabel.setForeground(Color.WHITE);
+
 
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
-        panel.add(titleLabel, gbc);
 
-        JLabel subtitleLabel = new JLabel("Упрощенная версия для 2 игроков", SwingConstants.CENTER);
-        subtitleLabel.setFont(new Font("Arial", Font.ITALIC, 16));
-        subtitleLabel.setForeground(Color.YELLOW);
 
         gbc.gridy = 1;
-        panel.add(subtitleLabel, gbc);
+
 
         JLabel nameLabel = new JLabel("Имя игрока:");
         nameLabel.setForeground(Color.WHITE);
@@ -94,16 +86,8 @@ public class LobbyPanel extends JPanel {
         gbc.fill = GridBagConstraints.NONE;
         panel.add(connectButton, gbc);
 
-        JLabel infoLabel = new JLabel(
-                "<html><center><font color='white'>Для запуска игры:<br>" +
-                        "1. Запустите сервер (java -jar carcassonne-game-1.0.jar server)<br>" +
-                        "2. Подключитесь с двух клиентов</font></center></html>"
-        );
-        infoLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-
         gbc.gridy = 5;
         gbc.insets = new Insets(30, 10, 10, 10);
-        panel.add(infoLabel, gbc);
 
         return panel;
     }

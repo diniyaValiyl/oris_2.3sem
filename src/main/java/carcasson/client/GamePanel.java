@@ -46,7 +46,7 @@ public class GamePanel extends JPanel {
     public void initialize() {
         boardPanel.initialize();
         playerPanel.setPlayerName(controller.getUsername());
-        appendChatMessage("=== ПРАВИЛА ИГРЫ ===");
+        appendChatMessage("ПРАВИЛА ИГРЫ");
         appendChatMessage("• tile-l.png: РАЗВИЛКА ДОРОГ - нельзя ставить мипла");
         appendChatMessage("• tile-n.png: ГОРОД - при соединении 2 плиток = 4 очка");
         appendChatMessage("• tile-monastery.png: МОНАСТЫРЬ - 1+соседи очков");
@@ -82,7 +82,7 @@ public class GamePanel extends JPanel {
     }
 
     public void gameEnded(String result) {
-        appendChatMessage("=== ИГРА ОКОНЧЕНА ===");
+        appendChatMessage("ИГРА ОКОНЧЕНА ");
         appendChatMessage(result);
         controlPanel.setEnabled(false);
         tilePanel.setEnabled(false);
@@ -93,8 +93,6 @@ public class GamePanel extends JPanel {
     }
 
     public void updatePlayerScore(Player player) {
-        playerPanel.updateScore(player.getScore(), player.getMeeplesLeft());
-        appendChatMessage("Ваш счет: " + player.getScore() + " очков");
-        appendChatMessage("Осталось миплов: " + player.getMeeplesLeft());
+
     }
 }

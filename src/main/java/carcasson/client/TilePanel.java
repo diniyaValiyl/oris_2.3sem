@@ -23,7 +23,7 @@ public class TilePanel extends JPanel {
         tileLabel = new JLabel("Ожидание плитки...", SwingConstants.CENTER);
         tileLabel.setFont(new Font("Arial", Font.PLAIN, 16));
 
-        rotateButton = new JButton("Повернуть плитку (R)");
+        rotateButton = new JButton("Повернуть плитку ");
         rotateButton.setEnabled(false);
         rotateButton.addActionListener(e -> rotateTile());
 
@@ -59,11 +59,9 @@ public class TilePanel extends JPanel {
                     fileName = currentTile.getImagePath();
                     fileName = fileName.substring(fileName.lastIndexOf("/") + 1);
 
-                    // Загружаем картинку
                     ImageIcon icon = new ImageIcon(getClass().getResource("/tiles/" + fileName));
                     Image image = icon.getImage();
 
-                    // Поворачиваем если нужно
                     if (currentTile.getRotation() > 0) {
                         image = rotateImage(image, currentTile.getRotation() * 90);
                     }
@@ -88,9 +86,7 @@ public class TilePanel extends JPanel {
         rotateButton.setEnabled(enabled && currentTile != null);
     }
 
-    // Метод для вращения изображения
     private Image rotateImage(Image image, double angle) {
-        // Создаем BufferedImage для вращения
         BufferedImage buffered = new BufferedImage(
                 image.getWidth(null),
                 image.getHeight(null),

@@ -3,7 +3,7 @@ package carcasson.client;
 import carcasson.controller.AppController;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+
 
 public class ChatPanel extends JPanel {
     private AppController controller;
@@ -38,7 +38,7 @@ public class ChatPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
         add(inputPanel, BorderLayout.SOUTH);
 
-        appendMessage("=== ДОБРО ПОЖАЛОВАТЬ В КАРКАССОН ===");
+        appendMessage("ДОБРО ПОЖАЛОВАТЬ В КАРКАССОН");
         appendMessage("Правила подсчета очков:");
         appendMessage("- Город: 2 очка за каждую плитку города");
         appendMessage("- Дорога: 1 очко за каждую плитку дороги");

@@ -8,8 +8,6 @@ import java.awt.*;
 public class PlayerPanel extends JPanel {
     private AppController controller;
     private JLabel nameLabel;
-    private JLabel scoreLabel;
-    private JLabel meeplesLabel;
     private JLabel turnLabel;
 
     public PlayerPanel(AppController controller) {
@@ -21,19 +19,11 @@ public class PlayerPanel extends JPanel {
         nameLabel = new JLabel("Имя: ");
         nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
 
-        scoreLabel = new JLabel("Очки: 0");
-        scoreLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-
-        meeplesLabel = new JLabel("Миплов: 4/4");
-        meeplesLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-
         turnLabel = new JLabel("Ожидание начала игры...");
         turnLabel.setFont(new Font("Arial", Font.ITALIC, 12));
         turnLabel.setForeground(Color.BLUE);
 
         add(nameLabel);
-        add(scoreLabel);
-        add(meeplesLabel);
         add(turnLabel);
     }
 
@@ -42,17 +32,9 @@ public class PlayerPanel extends JPanel {
     }
 
     public void setPlayerInfo(Player player) {
-        nameLabel.setText("Имя: " + player.getName());
-        scoreLabel.setText("Очки: " + player.getScore());
-        meeplesLabel.setText("Миплов: " + player.getMeeplesLeft() + "/4");
 
         Color playerColor = player.getColor().equals("RED") ? Color.RED : Color.BLUE;
         nameLabel.setForeground(playerColor);
-    }
-
-    public void updateScore(int score, int meeplesLeft) {
-        scoreLabel.setText("Очки: " + score);
-        meeplesLabel.setText("Миплов: " + meeplesLeft + "/4");
     }
 
     public void setCurrentTurn(String playerName) {

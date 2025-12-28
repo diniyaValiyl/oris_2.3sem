@@ -57,7 +57,7 @@ public class AppController {
 
                 case "GAME_START":
                     gameFrame.getGamePanel().gameStarted();
-                    gameFrame.getGamePanel().appendChatMessage("=== ИГРА НАЧАЛАСЬ ===");
+                    gameFrame.getGamePanel().appendChatMessage("ИГРА НАЧАЛАСЬ");
                     break;
 
                 case "TILE_DRAWN":
@@ -73,7 +73,7 @@ public class AppController {
                     gameFrame.getGamePanel().setPlayerTurn(currentPlayer);
 
                     if (currentPlayer.equals(username)) {
-                        gameFrame.getGamePanel().appendChatMessage("=== ВАШ ХОД ===");
+                        gameFrame.getGamePanel().appendChatMessage("ВАШ ХОД");
                     } else {
                         gameFrame.getGamePanel().appendChatMessage("Ход игрока: " + currentPlayer);
                     }
@@ -83,13 +83,12 @@ public class AppController {
                     System.out.println("AppController: получено GAME_STATE");
                     System.out.println("Данные типа: " + (message.getData() != null ? message.getData().getClass().getName() : "null"));
 
-                    // Проверяем, что это действительно массив плиток
+                    // Проверяем, что это массив
                     if (message.getData() instanceof Tile[][]) {
                         Tile[][] board = (Tile[][]) message.getData();
                         System.out.println("Размер массива: " + board.length + "x" +
                                 (board.length > 0 ? board[0].length : 0));
 
-                        // Считаем ненулевые плитки
                         int tileCount = 0;
                         for (int i = 0; i < board.length; i++) {
                             for (int j = 0; j < board[i].length; j++) {
@@ -101,7 +100,7 @@ public class AppController {
                         System.out.println("Плиток в массиве: " + tileCount);
                     }
 
-                    // Обновляем игровое поле с новым состоянием
+                    // Обновляем игровое поле
                     gameFrame.getGamePanel().updateGameState(message.getData());
                     break;
 
